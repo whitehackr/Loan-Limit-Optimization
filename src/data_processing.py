@@ -46,6 +46,9 @@ def load_raw_data(file_path: Optional[str] = None) -> pd.DataFrame:
     except Exception as e:
         raise ValueError(f"Error reading Excel file: {e}")
 
+    # Clean column names: lowercase and replace spaces with underscores
+    df.columns = df.columns.str.lower().str.replace(' ', '_')
+
     return df
 
 
