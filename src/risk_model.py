@@ -18,18 +18,32 @@ class CreditRiskTransitionMatrix:
 
     def build_transition_matrix(self) -> np.ndarray:
         """Build the synthetic transition matrix based on benchmarks."""
-        # Matrix values from the design doc will be added here
-        return np.zeros((5, 5))
+        # Matrix values from the design doc
+        return np.array([
+            # To Prime, Near-Prime, Subprime, High-Risk, Default
+            [0.85, 0.10, 0.01, 0.00, 0.04],  # From Prime
+            [0.05, 0.80, 0.05, 0.00, 0.10],  # From Near-Prime
+            [0.00, 0.05, 0.60, 0.05, 0.30],  # From Subprime
+            [0.00, 0.00, 0.05, 0.45, 0.50],  # From High-Risk
+            [0.00, 0.00, 0.00, 0.00, 1.00],  # From Default
+        ])
 
     def get_default_probability(self, risk_category: str) -> float:
         """Get the default probability for a given risk category."""
-        # Logic to extract P(Default) will be added here
-        pass
+        try:
+            state_index = self.states.index(risk_category)
+            return self.matrix[state_index, -1]
+        except ValueError:
+            raise ValueError(f"Unknown risk category: {risk_category}")
 
     def simulate_transition(self, current_state: str) -> str:
         """Simulate the next state for a customer."""
-        # State transition logic will be added here
-        pass
+        try:
+            state_index = self.states.index(current_state)
+            probabilities = self.matrix[state_index]
+            return np.random.choice(self.states, p=probabilities)
+        except ValueError:
+            raise ValueError(f"Unknown risk category: {current_state}")
 
     def validate_matrix(self):
         """Validate the transition matrix."""
