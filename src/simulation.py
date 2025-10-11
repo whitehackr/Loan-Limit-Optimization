@@ -39,8 +39,8 @@ class MonteCarloSimulation:
         return run_df
 
     def run_simulation(self, verbose=True):
-        """Run the full Monte Carlo simulation using weekly batch optimization."""
-        
+        """Run the full Monte Carlo simulation using monthly batch optimization."""
+
         iterator = range(self.n_iterations)
         if verbose:
             iterator = tqdm(iterator, desc="Running Monte Carlo Simulation")
@@ -51,30 +51,47 @@ class MonteCarloSimulation:
             total_increase_volume = 0
 
             for day in range(1, SIMULATION_DAYS + 1):
-                # Daily state updates (always happens)
+                # --- Monthly Optimization Trigger (day 1, 31, 61, 91, ...) ---
+                if day % 30 != 1:
+                    # Only update days_since_increase for active customers on non-optimization days
+                    active_mask = run_df['is_active']
+                    run_df.loc[active_mask, 'days_since_increase'] += 1
+                    continue
+
+                # On optimization days, do the state update
                 active_mask = run_df['is_active']
                 run_df.loc[active_mask, 'days_since_increase'] += 1
 
-                # --- Weekly Optimization Trigger ---
-                if day % 7 != 1:
-                    continue
-                
                 eligible_mask = active_mask & (run_df['days_since_increase'] >= ELIGIBILITY_DAYS)
                 if not eligible_mask.any():
                     continue
 
                 eligible_cohort_df = run_df[eligible_mask].copy()
 
-                # Use a weekly capital limit
-                weekly_scenario = self.scenario.copy()
-                weekly_scenario['daily_capital_limit'] *= 7
+                # Use a monthly capital limit (30 days of capital)
+                monthly_scenario = self.scenario.copy()
+                monthly_scenario['daily_capital_limit'] *= 30
 
                 if self.scenario.get('risk_appetite') is None:
                     offers_to_make_ids = eligible_cohort_df['customer_id']
                 else:
-                    optimizer = DailyOptimizationModel(eligible_cohort_df, weekly_scenario)
-                    optimal_decisions = optimizer.solve()
-                    offers_to_make_ids = [cid for cid, decision in optimal_decisions.items() if decision == 1]
+                    # Pre-filter: only optimize over customers with positive expected profit
+                    # Expected profit = p_accept * [(1 - p_default) * profit - p_default * LGD]
+                    profit_if_good = (1 - eligible_cohort_df['p_default']) * PROFIT_ON_TIME
+                    increase_amount = eligible_cohort_df['initial_loan'] * self.scenario['increase_pct']
+                    lgd = 0.5 * (1 + self.scenario['increase_pct']) * eligible_cohort_df['initial_loan'] * (1 - self.scenario['recovery_rate'])
+                    loss_if_bad = eligible_cohort_df['p_default'] * lgd
+                    expected_profit = eligible_cohort_df['p_accept'] * (profit_if_good - loss_if_bad)
+
+                    # Only send positive expected profit customers to MILP
+                    viable_cohort = eligible_cohort_df[expected_profit > 0].copy()
+
+                    if viable_cohort.empty:
+                        offers_to_make_ids = []
+                    else:
+                        optimizer = DailyOptimizationModel(viable_cohort, monthly_scenario)
+                        optimal_decisions = optimizer.solve()
+                        offers_to_make_ids = [cid for cid, decision in optimal_decisions.items() if decision == 1]
 
                 if not offers_to_make_ids:
                     continue
