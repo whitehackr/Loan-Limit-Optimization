@@ -19,16 +19,16 @@ class AcceptanceProbabilityModel:
         """Fit the Cox PH model."""
         df_survival = df.copy()
 
-        # One-hot encode risk category
+        # One-hot encode risk category (using lowercase convention)
         df_survival = pd.get_dummies(df_survival, columns=['risk_category'], drop_first=True)
 
         # Prepare data for lifelines
         df_lifelines = df_survival[[
-            'no_of_increases_in_2023', 
-            'initial_loan', 
+            'no_of_increases_in_2023',
+            'initial_loan',
             'days_since_last_loan',
-            'risk_category_Near-Prime', 
-            'risk_category_Prime', 
+            'risk_category_Near-Prime',
+            'risk_category_Prime',
             'risk_category_Subprime'
         ]].copy()
 
