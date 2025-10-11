@@ -8,18 +8,20 @@ Each scenario specifies key parameters that differ from the baseline.
 SCENARIOS = {
     # Baseline Strategy: Balanced risk/return approach
     'baseline': {
-        'increase_pct': 0.20,           # 20% increase amount
-        'risk_appetite': 0.15,          # 15% max daily default rate
-        'recovery_rate': 0.10,          # 10% recovery on defaults
-        'risk_multiplier': 2.0,         # 2x emerging market risk
-        'demand_factor': 0.931,         # 2023 Kenya economic conditions
+        'increase_pct': 0.20,
+        'risk_appetite': 0.15,
+        'daily_capital_limit': 41250,
+        'recovery_rate': 0.10,
+        'risk_multiplier': 2.0,
+        'demand_factor': 0.931,
         'description': 'Baseline policy with balanced risk-return profile'
     },
 
     # Conservative Strategy: Lower risk, lower returns
     'conservative': {
-        'increase_pct': 0.10,           # 10% increase (smaller offers)
-        'risk_appetite': 0.10,          # 10% max daily default rate (stricter)
+        'increase_pct': 0.10,
+        'risk_appetite': 0.10,
+        'daily_capital_limit': 30000,
         'recovery_rate': 0.10,
         'risk_multiplier': 2.0,
         'demand_factor': 0.931,
@@ -28,8 +30,9 @@ SCENARIOS = {
 
     # Aggressive Growth Strategy: Higher risk, higher potential returns
     'aggressive': {
-        'increase_pct': 0.30,           # 30% increase (larger offers)
-        'risk_appetite': 0.20,          # 20% max daily default rate (looser)
+        'increase_pct': 0.30,
+        'risk_appetite': 0.20,
+        'daily_capital_limit': 60000,
         'recovery_rate': 0.10,
         'risk_multiplier': 2.0,
         'demand_factor': 0.931,
@@ -40,7 +43,8 @@ SCENARIOS = {
     'low_recovery': {
         'increase_pct': 0.20,
         'risk_appetite': 0.15,
-        'recovery_rate': 0.05,          # 5% recovery (weak collections)
+        'daily_capital_limit': 41250,
+        'recovery_rate': 0.05,
         'risk_multiplier': 2.0,
         'demand_factor': 0.931,
         'description': 'Scenario with low recovery rate (poor collections)'
@@ -50,7 +54,8 @@ SCENARIOS = {
     'high_recovery': {
         'increase_pct': 0.20,
         'risk_appetite': 0.15,
-        'recovery_rate': 0.20,          # 20% recovery (strong collections)
+        'daily_capital_limit': 41250,
+        'recovery_rate': 0.20,
         'risk_multiplier': 2.0,
         'demand_factor': 0.931,
         'description': 'Scenario with high recovery rate (effective collections)'
@@ -60,9 +65,10 @@ SCENARIOS = {
     'pessimistic': {
         'increase_pct': 0.20,
         'risk_appetite': 0.15,
+        'daily_capital_limit': 41250,
         'recovery_rate': 0.10,
-        'risk_multiplier': 2.5,         # 2.5x risk (worsening conditions)
-        'demand_factor': 0.85,          # Lower demand (15% reduction)
+        'risk_multiplier': 2.5,
+        'demand_factor': 0.85,
         'description': 'Pessimistic economic scenario (recession)'
     },
 
@@ -70,16 +76,18 @@ SCENARIOS = {
     'optimistic': {
         'increase_pct': 0.20,
         'risk_appetite': 0.15,
+        'daily_capital_limit': 41250,
         'recovery_rate': 0.10,
-        'risk_multiplier': 1.5,         # 1.5x risk (improving conditions)
-        'demand_factor': 1.0,           # No macro dampening effect
+        'risk_multiplier': 1.5,
+        'demand_factor': 1.0,
         'description': 'Optimistic economic scenario (expansion)'
     },
 
     # No Optimization Baseline: Accept all eligible customers
     'no_optimization': {
         'increase_pct': 0.20,
-        'risk_appetite': None,          # No risk constraint (accept all)
+        'risk_appetite': None,
+        'daily_capital_limit': 999999, # Effectively unlimited for this scenario
         'recovery_rate': 0.10,
         'risk_multiplier': 2.0,
         'demand_factor': 0.931,
