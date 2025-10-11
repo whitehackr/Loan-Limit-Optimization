@@ -73,7 +73,7 @@ class MonteCarloSimulation:
                 monthly_scenario['daily_capital_limit'] *= 30
 
                 if self.scenario.get('risk_appetite') is None:
-                    offers_to_make_ids = eligible_cohort_df['customer_id']
+                    offers_to_make_ids = eligible_cohort_df['customer_id'].tolist()
                 else:
                     # Pre-filter: only optimize over customers with positive expected profit
                     # Expected profit = p_accept * [(1 - p_default) * profit - p_default * LGD]
