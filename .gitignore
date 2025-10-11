@@ -58,3 +58,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Assessment/Client specific files
+Some Context Docs/
+*Assessment*.pdf
+*Assessment*.docx
+*Assessment*.zip
+CredAble*.pdf
+CredAble*.zip
