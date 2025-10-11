@@ -61,12 +61,26 @@ class DailyOptimizationModel:
             default_probs = dict(zip(self.cohort['customer_id'], self.cohort['p_default']))
             self.problem += pulp.lpSum([self.decision_vars[i] * default_probs[i] for i in customers]) <= self.scenario['risk_appetite'] * pulp.lpSum([self.decision_vars[i] for i in customers]), "Daily_Portfolio_Risk"
 
-    def solve(self, verbose=False):
-        """Solve the optimization problem."""
+    def solve(self, verbose=False, time_limit=30):
+        """Solve the optimization problem.
+
+        Args:
+            verbose: Whether to print solver output
+            time_limit: Maximum solver time in seconds (default: 30)
+        """
         self._prepare_data()
         self._build_model()
-        
-        solver = pulp.PULP_CBC_CMD(msg=verbose)
+
+        # Use CBC with aggressive options for speed
+        solver = pulp.PULP_CBC_CMD(
+            msg=verbose,
+            timeLimit=time_limit,
+            options=[
+                'presolve on',
+                'cuts off',  # Disable cut generation for speed
+                'heuristics on',  # Enable heuristics for faster feasible solutions
+            ]
+        )
         self.problem.solve(solver)
 
         decisions = {}
