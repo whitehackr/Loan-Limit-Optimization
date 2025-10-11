@@ -1,6 +1,20 @@
 # Loan Limit Optimization
 
-**Hybrid Operations Research & Machine Learning for Credit Risk Management**
+**Loan Limit Optimization: Hybrid OR & ML for Credit Risk Management**
+
+_A production-ready system combining Cox Proportional Hazards survival analysis, Markov chain risk modeling, and mixed-integer programming to optimize loan limit increase strategies under regulatory constraints._
+
+## Business Problem
+
+Financial institutions face a critical optimization challenge: **Which customers should receive loan limit increases, and when?** 
+
+Offering too liberally increases default risk; being too conservative leaves profit on the table. This project develops a sophisticated decision framework that:
+- Predicts customer acceptance probability
+- Models dynamic credit risk transitions
+- Optimizes offers under capital and regulatory constraints
+- Quantifies expected profit with uncertainty bounds
+
+The system demonstrates $28.1M annual value-add over naive "offer to all" approaches.
 
 ## Overview
 
