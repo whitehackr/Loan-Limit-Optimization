@@ -171,7 +171,7 @@ Executes Monte Carlo simulations across 4 scenarios (baseline, conservative, agg
 
 **Production Recommendation**: Deploy conservative policy immediately while prioritizing demand model enhancement through longitudinal data collection and feature enrichment.
 
-## Technical Assessment Deliverables
+## Technical Approach
 
 This implementation addresses all required components:
 
@@ -195,6 +195,11 @@ pytest tests/
 ## Authors
 
 Kevin Waithaka
+Data Scientist | Operations Research & Machine Learning
+
+## License
+
+MIT License - see LICENSE file for details
 
 ---
 
