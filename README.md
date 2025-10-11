@@ -1,19 +1,20 @@
 # Loan Limit Optimization
 
-**Advanced Operations Research & Machine Learning for Credit Risk Management**
+**Hybrid Operations Research & Machine Learning for Credit Risk Management**
 
 ## Overview
 
-This project implements a sophisticated loan limit optimization system for CredAble, balancing profitability maximization with risk management. The system uses a combination of survival analysis, Markov chain modeling, mixed-integer linear programming, and Monte Carlo simulation to determine optimal loan limit increase strategies.
+This project implements a production-ready loan limit optimization system that integrates Cox Proportional Hazards demand forecasting, Markov chain risk modeling, and mixed-integer linear programming under realistic operational constraints. A Monte Carlo simulation framework evaluates strategic scenarios, revealing that a conservative policy (10% risk appetite, 10% increase size) delivers optimal risk-adjusted returns ($114.8k annual NPV) while a no-optimization baseline produces -$28.0M losses, quantifying the MILP's value-add at $28.1M annually.
 
 ## Key Features
 
-- **Cox Proportional Hazards Model** for demand forecasting (P(Accept))
-- **Synthetic Markov Transition Matrix** for risk state modeling (P(Default))
-- **Three-Outcome Profit Model** (Early Repayment, On-Time, Default)
-- **Mixed-Integer Linear Programming (MILP)** for daily tactical optimization
-- **Monte Carlo Simulation** with annual regulatory constraint ($120M cap)
-- **Comprehensive Risk Analytics** (VaR, CVaR, sensitivity analysis)
+- **Cox Proportional Hazards Model** for demand forecasting with macro economic adjustments
+- **Synthetic Markov Transition Matrix** for dynamic risk state modeling (FICO-adjusted)
+- **Mixed-Integer Linear Programming (MILP)** with monthly batch optimization
+- **Expected Profit Pre-filtering** reducing MILP problem size by 10x
+- **Monte Carlo Simulation** evaluating 4 strategic scenarios over 365-day horizon
+- **Performance Optimizations** achieving 50x speedup through batching and solver tuning
+- **Comprehensive Risk Analytics** (VaR, CVaR, comparative scenario analysis)
 
 ## Project Structure
 
@@ -30,18 +31,18 @@ Loan-Limit-Optimization/
 │   └── processed/             # Processed datasets
 ├── notebooks/
 │   ├── 01_exploratory_data_analysis.ipynb
-│   ├── 02_modeling_optimization_simulation.ipynb
-│   └── 03_risk_analytics_final_report.ipynb
+│   ├── 02_demand_risk_modeling.ipynb
+│   └── 03_simulation_and_analysis.ipynb
 ├── src/
 │   ├── data_processing.py    # Data loading & feature engineering
 │   ├── risk_segmentation.py  # Risk categorization
 │   ├── demand_model.py        # Cox PH model for P(Accept)
-│   ├── risk_model.py          # Transition matrix & LGD
-│   ├── optimization.py        # MILP engine
-│   ├── simulation.py          # Monte Carlo simulator
-│   ├── risk_analytics.py      # VaR, CVaR calculations
-│   └── visualization.py       # Plotting functions
-├── tests/                     # Unit tests
+│   ├── risk_model.py          # Markov transition matrix
+│   ├── optimization.py        # MILP solver with pre-filtering
+│   └── simulation.py          # Monte Carlo simulation engine
+├── tests/
+│   ├── test_optimization.py
+│   └── test_simulation.py
 └── outputs/
     ├── figures/               # Visualizations
     ├── models/                # Saved models
@@ -93,80 +94,110 @@ To modify scenarios, edit `config/scenarios.py`.
 jupyter notebook notebooks/01_exploratory_data_analysis.ipynb
 ```
 
-### Step 2: Modeling, Optimization & Simulation
+Performs data quality assessment, feature engineering, and risk segmentation using centralized modules.
+
+### Step 2: Demand & Risk Modeling
 
 ```bash
-jupyter notebook notebooks/02_modeling_optimization_simulation.ipynb
+jupyter notebook notebooks/02_demand_risk_modeling.ipynb
 ```
 
-### Step 3: Risk Analytics & Final Report
+Builds Cox PH demand model (C-index = 0.506) and implements synthetic Markov transition matrix with train/test evaluation.
+
+### Step 3: Simulation & Comparative Analysis
 
 ```bash
-jupyter notebook notebooks/03_risk_analytics_final_report.ipynb
+jupyter notebook notebooks/03_simulation_and_analysis.ipynb
 ```
+
+Executes Monte Carlo simulations across 4 scenarios (baseline, conservative, aggressive, no_optimization) with comprehensive technical analysis.
 
 ## Methodology
 
-### Block 1: Data Foundation & Feature Engineering
-- Risk categorization (Prime, Near-Prime, Subprime, High-Risk)
-- Feature engineering (Opportunity Number, etc.)
+### 1. Data Foundation & Risk Segmentation
+- Centralized risk categorization module (Prime ≥95%, Near-Prime ≥90%, Subprime ≥85%, High-Risk ≥80%)
+- Feature engineering for eligibility rules (60-day minimum between offers)
 
-### Block 2: Probabilistic Modeling
-- **Demand Model**: Cox Proportional Hazards for P(Accept)
-- **Risk Model**: Markov transition matrix for P(Default)
-- **Three-Outcome Model**: Early/OnTime/Default with risk-adjusted probabilities
+### 2. Probabilistic Modeling
+- **Demand Model**: Cox Proportional Hazards with macro adjustment factor (0.931 for inflation/unemployment)
+- **Risk Model**: Synthetic Markov transition matrix (FICO-adjusted, 2.0x emerging market multiplier)
+- **Expected Profit**: $E[\pi_i] = P(\text{Accept}_i) \cdot [(1 - P(\text{Default}_i)) \cdot 40 - P(\text{Default}_i) \cdot \text{LGD}_i]$
 
-### Block 3: Daily Tactical Optimization (MILP)
+### 3. Monthly Tactical Optimization (MILP)
 - Maximize expected profit subject to:
-  - Daily capital allocation constraint
-  - Daily portfolio risk constraint
+  - Monthly capital allocation constraint ($1.24M)
+  - Portfolio risk constraint (weighted average default rate ≤ 15%)
+- Pre-filtering eliminates negative expected profit customers before optimization
+- CBC solver with 30-second timeout, presolve enabled, cuts disabled
 
-### Block 4: Strategic Forecast (Monte Carlo Simulation)
-- 10,000 iterations of 365-day forecasts
+### 4. Strategic Simulation (Monte Carlo)
+- 365-day horizon with monthly batch optimization (12 solves per iteration)
 - Annual regulatory limit enforcement ($120M cap)
-- Stochastic acceptance, default, and state transitions
+- Stochastic acceptance, default, and risk state transitions via Markov chain
+- Comparative analysis across 4 scenarios: baseline, conservative, aggressive, no_optimization
 
-### Block 5: Risk Analytics
-- Value at Risk (VaR) and Conditional VaR (CVaR)
-- Strategy comparison across scenarios
-- Sensitivity analysis on key parameters
+### 5. Performance Engineering
+- Expected profit pre-filtering: 10x problem size reduction
+- Monthly batching: 30x fewer MILP solves vs daily optimization
+- Solver optimizations: 50-70% per-solve speedup
+- Combined: 50x overall speedup (312 minutes → 6 minutes per simulation)
 
 ## Key Results
 
-*(To be populated after analysis)*
+### Scenario Comparison (N=25 iterations)
 
-- **Expected Annual NPV**: $X.XM
-- **VaR @ 95%**: $Z.ZM
-- **Optimal Strategy**: TBD
+| Scenario | Mean NPV | VaR (95%) | CVaR (95%) | Avg Defaults | Avg Volume |
+|----------|----------|-----------|------------|--------------|------------|
+| **Conservative** | **$114,757** | $92,472 | $91,430 | 451 | $1.05M |
+| Baseline | $95,607 | $78,381 | $74,954 | 381 | $1.72M |
+| Aggressive | $81,924 | $62,158 | $59,548 | 321 | $2.15M |
+| No Optimization | **-$27.97M** | -$28.08M | -$28.09M | 21,754 | $48.48M |
 
-## Productionization Roadmap
+### Strategic Findings
 
-See `docs/PRODUCTIONIZATION.md` for:
-- API design for daily decision serving
-- Database schema
-- Model retraining strategy
-- Monitoring & alerting framework
+**1. Conservative Policy Optimal**
+- 10% risk appetite + 10% increase size delivers 20% higher NPV than baseline
+- Weak demand signals (C-index 0.506) make selectivity more valuable than scale
+- Smaller exposures preserve capital when model cannot rank customers effectively
+
+**2. MILP Value-Add: $28.1M**
+- No-optimization scenario loses $27.97M with 21,754 defaults (72% of customer base)
+- Validates constrained optimization as non-negotiable infrastructure
+
+**3. Model Limitation Drives Strategy**
+- Cox PH C-index of 0.506 (60 bps above random) limits targeting precision
+- Expected profit calculation degenerates to risk-weighted filtering
+- Demand model improvement is critical path to unlocking higher-volume strategies
+
+**Production Recommendation**: Deploy conservative policy immediately while prioritizing demand model enhancement through longitudinal data collection and feature enrichment.
+
+## Technical Assessment Deliverables
+
+This implementation addresses all required components:
+
+✅ **Dynamic credit eligibility** - Markov transition matrix updates risk categories post-acceptance
+✅ **Markov chain modeling** - Synthetic 5×5 transition matrix with absorbing default state
+✅ **Stochastic demand forecasting** - Cox PH with macro adjustment factor
+✅ **Loan lifecycle simulation** - 365-day Monte Carlo with monthly MILP optimization
+✅ **Constraint optimization** - Capital and risk appetite constraints with 30s timeout
+✅ **Mathematical formulation** - Documented in notebook analysis
+✅ **Python implementation** - Full modular codebase with unit tests
+✅ **Simulation results** - Comparative scenario analysis with VaR/CVaR metrics
+✅ **Operational recommendations** - Production deployment strategy and monitoring framework
 
 ## Testing
 
+Run unit tests:
 ```bash
 pytest tests/
 ```
 
-## Contributing
-
-See `CONTRIBUTING.md` for guidelines.
-
-## License
-
-*(To be added)*
-
 ## Authors
 
-- **Project Lead**: Kevin Waithaka
+Kevin Waithaka
 
 ---
 
-**Status**: 🚧 In Development
+**Status**: ✅ Complete
 
-**Last Updated**: October 10, 2025
+**Last Updated**: October 11, 2025
