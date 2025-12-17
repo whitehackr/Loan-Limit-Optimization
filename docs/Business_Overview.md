@@ -525,29 +525,29 @@ $$\sum_{i \in \text{Eligible}} x_i \times \alpha \times L_i \leq K_{\text{daily}
 The total increase amount across all selected customers cannot exceed the daily capital budget $K_{\text{daily}}$ (e.g., $41,250).
 
 **Constraint 2: Portfolio Risk Appetite**
-$$\frac{\sum_{i \in \text{Eligible}} x_i \times P(\text{Default}_i)}{\sum_{i \in \text{Eligible}} x_i} \leq \theta$$
 
 The weighted average default probability of offered customers must not exceed risk appetite threshold $\theta$ (e.g., 0.15 for 15% appetite).
 
-This can be rewritten as:
-$$\sum_{i \in \text{Eligible}} x_i \times P(\text{Default}_i) \leq \theta \times \sum_{i \in \text{Eligible}} x_i$$
+$$\sum_{i \in \text{Eligible}} x_i \cdot P(\text{Default}_i) \leq \theta \sum_{i \in \text{Eligible}} x_i$$
+
+Equivalently, the weighted average is constrained by:
+
+$$\text{Weighted Avg Default} = \frac{\sum_{i} x_i \cdot P(\text{Default}_i)}{\sum_{i} x_i} \leq \theta$$
 
 ### A.4 Net Present Value (NPV) Calculation
 
-Daily profit or loss is discounted back to present value using a 19% annual discount rate:
+Daily profit or loss is discounted back to present value using a 19% annual discount rate, where $r = 0.19$ and $d \in [1, 365]$ denotes the day of the year:
 
-$$\text{NPV}_{\text{day}} = \frac{\text{Outcome}}{(1 + r)^{\text{day}/365}}$$
+$$NPV_d = \frac{\text{Outcome}}{(1 + r)^{d/365}}$$
 
-where $r = 0.19$ (annual discount rate) and day ∈ [1, 365].
-
-**On success:**
-$$\text{NPV}_{\text{success}} = \frac{\$40}{(1.19)^{\text{day}/365}}$$
+**On successful repayment:**
+$$NPV_{\text{success}} = \frac{40}{1.19^{d/365}}$$
 
 **On default:**
-$$\text{NPV}_{\text{default}} = \frac{-\text{LGD}_i}{(1.19)^{\text{day}/365}}$$
+$$NPV_{\text{default}} = \frac{-LGD_i}{1.19^{d/365}}$$
 
-**Annual aggregation:**
-$$\text{Total NPV} = \sum_{\text{all days}} \sum_{\text{all customers}} \text{NPV}_{\text{day}}$$
+**Annual NPV aggregation:**
+$$\text{Total NPV} = \sum_{d=1}^{365} \sum_{\text{all customers}} NPV_d$$
 
 ### A.5 Markov Chain Transition Probabilities
 
@@ -588,7 +588,10 @@ Expected number of defaults across portfolio:
 
 $$E[\text{Defaults}] = \sum_{i \in \text{Offered}} P(\text{Default}_i)$$
 
-Portfolio default rate:
-$$\text{Default Rate} = \frac{E[\text{Defaults}]}{\text{# Offers}}$$
+Portfolio default rate as a percentage:
+
+$$\text{Default Rate} = \frac{E[\text{Defaults}]}{N_{\text{offers}}} \times 100\%$$
+
+where $N_{\text{offers}}$ is the total number of customers offered a limit increase.
 
 This is constrained to not exceed risk appetite $\theta$ via Constraint 2 in section A.3.
