@@ -476,3 +476,119 @@ Phase 1 is therefore as much about data collection as deployment. We're investin
 5. **Roadmap**: Conservative → Calibrate with right data → Scale with improved models, with A/B testing validating value
 
 6. **Model Evolution**: Cox PH is appropriate for snapshot data; Phase 1 data collection enables transition to simpler, more effective models in Phase 2
+
+---
+
+## Appendix: Mathematical Formulations
+
+### A.1 Expected Profit Formula
+
+For each customer i, the expected profit when offered a limit increase is:
+
+$$E[\pi_i] = P(\text{Accept}_i) \times \left[ (1 - P(\text{Default}_i)) \times \pi_{\text{success}} - P(\text{Default}_i) \times \text{LGD}_i \right]$$
+
+where:
+- $P(\text{Accept}_i)$: Probability customer accepts the offer (from Cox PH model)
+- $P(\text{Default}_i)$: Probability of default (from Markov transition matrix by risk category)
+- $\pi_{\text{success}} = \$40$: Profit earned on successful repayment
+- $\text{LGD}_i$: Loss Given Default for customer i
+
+### A.2 Loss Given Default (LGD)
+
+$$\text{LGD}_i = \rho_{\text{loss}} \times \text{EAD}_i \times (1 - \rho_{\text{recovery}})$$
+
+where:
+- $\rho_{\text{loss}} = 0.5$: Loss realization percentage (default occurs at 50% of loan paydown)
+- $\text{EAD}_i = L_i \times (1 + \alpha)$: Exposure at default (original loan + increase)
+  - $L_i$: Initial loan amount for customer i
+  - $\alpha$: Increase percentage (0.10, 0.20, or 0.30)
+- $\rho_{\text{recovery}} = 0.10$: Recovery rate on defaulted loans
+
+Simplified:
+$$\text{LGD}_i = 0.5 \times L_i \times (1 + \alpha) \times (1 - 0.10) = 0.45 \times L_i \times (1 + \alpha)$$
+
+### A.3 Mixed-Integer Linear Program (MILP)
+
+**Decision Variables:**
+$$x_i \in \{0, 1\} \quad \forall i \in \text{Eligible Cohort}$$
+
+where $x_i = 1$ means offer a limit increase to customer i, and $x_i = 0$ means do not offer.
+
+**Objective Function** (Maximize Expected Profit):
+$$\max \sum_{i \in \text{Eligible}} x_i \times E[\pi_i]$$
+
+where $E[\pi_i]$ is the expected profit formula from A.1.
+
+**Constraint 1: Daily Capital Allocation**
+$$\sum_{i \in \text{Eligible}} x_i \times \alpha \times L_i \leq K_{\text{daily}}$$
+
+The total increase amount across all selected customers cannot exceed the daily capital budget $K_{\text{daily}}$ (e.g., $41,250).
+
+**Constraint 2: Portfolio Risk Appetite**
+$$\frac{\sum_{i \in \text{Eligible}} x_i \times P(\text{Default}_i)}{\sum_{i \in \text{Eligible}} x_i} \leq \theta$$
+
+The weighted average default probability of offered customers must not exceed risk appetite threshold $\theta$ (e.g., 0.15 for 15% appetite).
+
+This can be rewritten as:
+$$\sum_{i \in \text{Eligible}} x_i \times P(\text{Default}_i) \leq \theta \times \sum_{i \in \text{Eligible}} x_i$$
+
+### A.4 Net Present Value (NPV) Calculation
+
+Daily profit or loss is discounted back to present value using a 19% annual discount rate:
+
+$$\text{NPV}_{\text{day}} = \frac{\text{Outcome}}{(1 + r)^{\text{day}/365}}$$
+
+where $r = 0.19$ (annual discount rate) and day ∈ [1, 365].
+
+**On success:**
+$$\text{NPV}_{\text{success}} = \frac{\$40}{(1.19)^{\text{day}/365}}$$
+
+**On default:**
+$$\text{NPV}_{\text{default}} = \frac{-\text{LGD}_i}{(1.19)^{\text{day}/365}}$$
+
+**Annual aggregation:**
+$$\text{Total NPV} = \sum_{\text{all days}} \sum_{\text{all customers}} \text{NPV}_{\text{day}}$$
+
+### A.5 Markov Chain Transition Probabilities
+
+The transition matrix specifies the probability of moving from state s to state s':
+
+$$P(\text{state}_{t+1} | \text{state}_t) = \begin{bmatrix}
+P(P | P) & P(NP | P) & P(S | P) & P(HR | P) & P(D | P) \\
+P(P | NP) & P(NP | NP) & P(S | NP) & P(HR | NP) & P(D | NP) \\
+P(P | S) & P(NP | S) & P(S | S) & P(HR | S) & P(D | S) \\
+P(P | HR) & P(NP | HR) & P(S | HR) & P(HR | HR) & P(D | HR) \\
+0 & 0 & 0 & 0 & 1
+\end{bmatrix}$$
+
+where P=Prime, NP=Near-Prime, S=Subprime, HR=High-Risk, D=Default.
+
+The default state is absorbing: $P(D | D) = 1.0$.
+
+### A.6 Cox Proportional Hazards Partial Likelihood
+
+The partial likelihood for Cox PH model is:
+
+$$L(\beta) = \prod_{i: \delta_i=1} \frac{\exp(\beta^T x_i)}{\sum_{j \in R_i} \exp(\beta^T x_j)}$$
+
+where:
+- $\delta_i$ = event indicator (1 for acceptance, 0 for censoring)
+- $x_i$ = covariate vector for customer i
+- $R_i$ = risk set (customers eligible at time $t_i$)
+- $\beta$ = coefficient vector
+
+**Predicted acceptance probability:**
+$$P(\text{Accept}_i) = 1 - \exp(-\hat{h}(t_i | x_i))$$
+
+where $\hat{h}(t_i | x_i) = \hat{h}_0(t_i) \exp(\beta^T x_i)$ is the estimated hazard at time $t_i$.
+
+### A.7 Portfolio Default Rate Constraint
+
+Expected number of defaults across portfolio:
+
+$$E[\text{Defaults}] = \sum_{i \in \text{Offered}} P(\text{Default}_i)$$
+
+Portfolio default rate:
+$$\text{Default Rate} = \frac{E[\text{Defaults}]}{\text{# Offers}}$$
+
+This is constrained to not exceed risk appetite $\theta$ via Constraint 2 in section A.3.
