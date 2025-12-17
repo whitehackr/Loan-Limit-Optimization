@@ -485,12 +485,12 @@ Phase 1 is therefore as much about data collection as deployment. We're investin
 
 For each customer i, the expected profit when offered a limit increase is:
 
-$$E[\pi_i] = P(\text{Accept}_i) \times \left[ (1 - P(\text{Default}_i)) \times \pi_{\text{success}} - P(\text{Default}_i) \times \text{LGD}_i \right]$$
+$$E[\pi_i] = P(\text{Accept}_i) \times \left[ (1 - P(\text{Default}_i)) \times \pi_s - P(\text{Default}_i) \times \text{LGD}_i \right]$$
 
 where:
 - $P(\text{Accept}_i)$: Probability customer accepts the offer (from Cox PH model)
 - $P(\text{Default}_i)$: Probability of default (from Markov transition matrix by risk category)
-- $\pi_{\text{success}} = \$40$: Profit earned on successful repayment
+- $\pi_s = 40$: Profit in dollars earned on successful repayment
 - $\text{LGD}_i$: Loss Given Default for customer i
 
 ### A.2 Loss Given Default (LGD)
@@ -515,12 +515,12 @@ $$x_i \in \{0, 1\} \quad \forall i \in \text{Eligible Cohort}$$
 where $x_i = 1$ means offer a limit increase to customer i, and $x_i = 0$ means do not offer.
 
 **Objective Function** (Maximize Expected Profit):
-$$\max \sum_{i \in \text{Eligible}} x_i \times E[\pi_i]$$
+$$\max \sum_{i \in \text{Eligible}} x_i \cdot E[\pi_i]$$
 
-where $E[\pi_i]$ is the expected profit formula from A.1.
+where $E[\pi_i]$ is calculated per the formula in A.1.
 
 **Constraint 1: Daily Capital Allocation**
-$$\sum_{i \in \text{Eligible}} x_i \times \alpha \times L_i \leq K_{\text{daily}}$$
+$$\sum_{i \in \text{Eligible}} x_i \cdot \alpha \cdot L_i \leq K_{\text{daily}}$$
 
 The total increase amount across all selected customers cannot exceed the daily capital budget $K_{\text{daily}}$ (e.g., $41,250).
 
